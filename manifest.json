@@ -1,0 +1,31 @@
+{
+    "name": "FarmStat",
+    "description": "Statistics for your favourite yield aggregators",
+    "version": "1.0",
+    "manifest_version": 3,
+    "permissions": [
+        "tabs"
+    ],
+    "host_permissions": [
+        "https://solfarm.io/",
+        "https://app.beefy.finance/ "
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://solfarm.io/*"
+            ],
+            "js": [
+                "solfarm-content-script.js"
+            ]
+        },
+        {
+            "matches": [
+                "https://app.beefy.finance/*"
+            ],
+            "js": [
+                "beefy-content-script.js"
+            ]
+        }
+    ]
+}
