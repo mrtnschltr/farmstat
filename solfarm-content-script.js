@@ -1,8 +1,6 @@
 const r_dollar = /\$((\d{1,3})?,)?(\d{1,3}\.\d{2})/
 const config = { attributes: false, childList: true, subtree: false };
-const targetNode = document.querySelector('div.vaults-table')
 const horizon = ['daily', 'weekly', 'yearly']
-
 
 function callback(mutationsList, observer) {
     observer.disconnect();
@@ -52,7 +50,7 @@ function callback(mutationsList, observer) {
     if (returns) {
         updateStatRow(returns);
     }
-    observer.observe(targetNode, config);
+    observer.observe(getTargetNode(), config);
 }
 
 function updateStatRow(returns) {
@@ -125,6 +123,18 @@ function divClass(className) {
     return div
 }
 
-const observer = new MutationObserver(callback);
-observer.observe(targetNode, config);
+function getTargetNode() {
+    return document.querySelector('div.vaults-table')
+}
 
+function init() {
+    const targetNode = getTargetNode();
+    if (targetNode) {
+        const observer = new MutationObserver(callback);
+        observer.observe(targetNode, config);
+    } else {
+        setTimeout(init, 500)
+    }
+}
+
+init();
