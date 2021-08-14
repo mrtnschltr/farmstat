@@ -1,0 +1,11 @@
+.farmstat-dollar {
+    color: #45dd6b 
+}
+
+.farmstat-header-wrapper {
+    display: flex;
+}
+
+.farmstat-header-cell {
+    flex-direction: column;
+}

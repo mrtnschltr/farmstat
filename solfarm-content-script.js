@@ -1,9 +1,21 @@
-const r_dollar = /\$((\d{1,3})?,)?(\d{1,3}\.\d{2})/
+const r_dollar = /\$((\d{1,3})?,)?(\d{1,3}\.\d{2})/;
 const config = { attributes: false, childList: true, subtree: false };
-const horizon = ['daily', 'weekly', 'yearly']
+const horizon = ['daily', 'weekly', 'yearly'];
 
 function callback(mutationsList, observer) {
     observer.disconnect();
+    const returns = getReturns();
+    if (returns) {
+        updateStatDisplay(returns);
+    }
+    updateStatDisplay(returns);
+    observer.observe(getTargetNode(), config);
+}
+
+function getReturns() {
+    // Returns an Array 
+    // Each asset belongs to one element and contains the value in dollar, the daily weekly and yearly returns
+    // Writes these $ returns into the rows of the assets on the fly
     let returns = Array()
     let vaultRows = Array.from(document.querySelectorAll('div.vaults-table__row-item'))
     vaultRows.forEach((row) => {
@@ -36,24 +48,24 @@ function callback(mutationsList, observer) {
                 let idx = returns.length - 1;
                 for (var i = 0; i < 3; i++) {
                     let parentNode = cells[i].parentNode
-                    let newDollarNode = document.createElement('div');
-                    newDollarNode.className = 'vaults-table__row-item__cell-usd';
-                    newDollarNode.innerText = '$' + (returns[idx][horizon[i]] * returns[idx].dollarAmount).toFixed(2);
-                    parentNode.appendChild(newDollarNode);
+                    let dollarNode = parentNode.querySelector('div.farmstat-dollar')
+                    if (!dollarNode) {
+                        dollarNode = document.createElement('div');
+                        dollarNode.classList.add('farmstat-dollar')
+                        dollarNode.classList.add("farmstat-row")
+                        dollarNode.classList.add('vaults-table__row-item__cell-usd');
+                        parentNode.appendChild(dollarNode);
+                    }
+                    dollarNode.innerText = '$' + (returns[idx][horizon[i]] * returns[idx].dollarAmount).toFixed(2);
                 }
             }
         }
-
     })
 
-    // add an additional row on top with the sum of all returns+investments
-    if (returns) {
-        updateStatRow(returns);
-    }
-    observer.observe(getTargetNode(), config);
+    return returns
 }
 
-function updateStatRow(returns) {
+function updateStatDisplay(returns) {
     statistics = {
         'totalDollarAmount': 0,
         // returns:
@@ -73,47 +85,53 @@ function updateStatRow(returns) {
     statistics.weekly.relative = statistics.weekly.absolute / statistics.totalDollarAmount;
     statistics.yearly.relative = statistics.yearly.absolute / statistics.totalDollarAmount;
 
-    const tableHeader = document.querySelector('div.vaults-table__header');
-    const table = tableHeader.parentNode;
-    let statRow = table.querySelector('div.farmstat_toprow')
-    if (!statRow) {
-        statRow = divClass("vaults-table__row  ");
-        statRow.classList.add('farmstat_toprow');
-    } else {
-        statRow.innerHTML = '';
+    const headerParentNode = getHeaderParent();
+    const depositedNode = headerParentNode.querySelectorAll('span.app-header__meta-item__value')[1];
+    if (!depositedNode.classList.contains('farmstat-dollar')) {
+        depositedNode.classList.add('farmstat-dollar');
     }
-    table.insertBefore(statRow, tableHeader.nextSibling);
-    const statRowItem = divClass("vaults-table__row-item");
-    statRow.appendChild(statRowItem)
-    const newAssetCol = divClass("vaults-table__row-item__asset")
-    statRowItem.appendChild(newAssetCol)
+    depositedNode.innerText = depositedNode.innerText;
 
-    for (var i = 0; i < 5; i++) {
-        let newCol = document.createElement('div');
-        newCol.className = "vaults-table__row-item__cell";
-        statRowItem.appendChild(newCol)
-        // total $ invested
-        // total daily, weekly, yearly returns
-        // relative daily, weeky, yearly returns
-    }
+    const tableHeaderNodes = document.querySelectorAll('div.vaults-table__header-cell');
+    const statItems = [
+        { index: 1, value: '$' + statistics.totalDollarAmount.toFixed(2), id: 'farmstat-header-total' },
+        { index: 2, value: createStatValueString(statistics.daily), id: 'farmstat-header-daily' },
+        { index: 3, value: createStatValueString(statistics.weekly), id: 'farmstat-header-weekly' },
+        { index: 4, value: createStatValueString(statistics.yearly), id: 'farmstat-header-yearly' },
+    ]
+    statItems.forEach(item => {
 
-    statRowItem.appendChild(divClass("vaults-table__row-item__toggle"))
+        const headerFarmstatDiv = document.querySelector('div#' + item.id);
+        if (headerFarmstatDiv) {
+            // update existing items
+            headerFarmstatDiv.innerText = item.value;
+        } else {
+            // put innerHTML of header elements in a new wrapper div with display: flex
+            const farmStatWrapper = document.createElement('div');
+            farmStatWrapper.classList.add('farmstat-header-wrapper');
+            farmStatWrapper.innerHTML = tableHeaderNodes[item.index].innerHTML;
+            tableHeaderNodes[item.index].innerHTML = '';
+            // change the diplay of the existing header to block
+            tableHeaderNodes[item.index].classList.add('farmstat-header-cell');
+            tableHeaderNodes[item.index].appendChild(farmStatWrapper);
 
-    const cellNodes = statRow.querySelectorAll('div.vaults-table__row-item__cell')
-    let totalDollarNode = divClass("vaults-table__row-item__cell-usd")
-    totalDollarNode.innerText = "$" + statistics.totalDollarAmount.toFixed(2)
-    cellNodes[1].appendChild(totalDollarNode)
+            // add a children node with our content to the header element
+            let itemContentNode = document.createElement('div');
+            itemContentNode.id = item.id;
+            itemContentNode.classList.add('farmstat-dollar');
+            itemContentNode.classList.add('vaults-table__row-item__cell-usd')
+            itemContentNode.innerText = item.value;
+            tableHeaderNodes[item.index].appendChild(itemContentNode);
+        }
+    });
+}
 
-    for (var i = 0; i < 3; i++) {
-        let parent = document.createElement('span')
-        let relNode = document.createElement('span')
-        relNode.innerText = (statistics[horizon[i]].relative * 100).toFixed(2) + "%";
-        let absNode = divClass("vaults-table__row-item__cell-usd")
-        absNode.innerText = "$" + (statistics[horizon[i]].absolute).toFixed(2)
-        parent.appendChild(relNode);
-        parent.appendChild(absNode);
-        cellNodes[i + 2].appendChild(parent);
-    }
+function createStatValueString(statHorizon) {
+    return "$" + (statHorizon.absolute).toFixed(2) + " (" + (statHorizon.relative * 100).toFixed(2) + "%)"
+}
+
+function getHeaderParent() {
+    return document.querySelector('div.app-header__meta');
 }
 
 function divClass(className) {

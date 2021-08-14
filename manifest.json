@@ -17,6 +17,9 @@
             ],
             "js": [
                 "solfarm-content-script.js"
+            ],
+            "css": [
+                "farmstat.css"
             ]
         },
         {
