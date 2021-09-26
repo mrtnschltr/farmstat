@@ -15,7 +15,7 @@ function callback(mutationsList, observer) {
 function getReturns() {
     // Returns an Array 
     // Each asset belongs to one element and contains the value in dollar, the daily weekly and yearly returns
-    // Writes these $ returns into the rows of the assets on the fly
+    // Writes these $ returns into the rows of the assets on the fly (as a side-effect)
     let returns = Array()
     let vaultRows = Array.from(document.querySelectorAll('div.vaults-table__row-item'))
     vaultRows.forEach((row) => {
@@ -66,6 +66,8 @@ function getReturns() {
 }
 
 function updateStatDisplay(returns) {
+    // takes the returns from getReturns, 
+    // calculates aggregate stats and writes them in the respective columns
     statistics = {
         'totalDollarAmount': 0,
         // returns:
@@ -86,18 +88,20 @@ function updateStatDisplay(returns) {
     statistics.yearly.relative = statistics.yearly.absolute / statistics.totalDollarAmount;
 
     const headerParentNode = getHeaderParent();
-    const depositedNode = headerParentNode.querySelectorAll('span.app-header__meta-item__value')[1];
+    const tableHeaderNodes = headerParentNode.querySelectorAll('div.vaults-table__header-cell');
+
+    // select node to insert the total deposited amount
+    // check for 'farmstat-dollar' class, add if not present
+    const depositedNode = tableHeaderNodes[1];
     if (!depositedNode.classList.contains('farmstat-dollar')) {
         depositedNode.classList.add('farmstat-dollar');
     }
-    depositedNode.innerText = depositedNode.innerText;
 
-    const tableHeaderNodes = document.querySelectorAll('div.vaults-table__header-cell');
     const statItems = [
         { index: 1, value: '$' + statistics.totalDollarAmount.toFixed(2), id: 'farmstat-header-total' },
-        { index: 2, value: createStatValueString(statistics.daily), id: 'farmstat-header-daily' },
-        { index: 3, value: createStatValueString(statistics.weekly), id: 'farmstat-header-weekly' },
-        { index: 4, value: createStatValueString(statistics.yearly), id: 'farmstat-header-yearly' },
+        { index: 2, value: formatStatValue(statistics.daily), id: 'farmstat-header-daily' },
+        { index: 3, value: formatStatValue(statistics.weekly), id: 'farmstat-header-weekly' },
+        { index: 4, value: formatStatValue(statistics.yearly), id: 'farmstat-header-yearly' },
     ]
     statItems.forEach(item => {
 
@@ -126,12 +130,13 @@ function updateStatDisplay(returns) {
     });
 }
 
-function createStatValueString(statHorizon) {
+function formatStatValue(statHorizon) {
     return "$" + (statHorizon.absolute).toFixed(2) + " (" + (statHorizon.relative * 100).toFixed(2) + "%)"
 }
 
 function getHeaderParent() {
-    return document.querySelector('div.app-header__meta');
+    // returns header element of vault table with aggregate stats
+    return document.querySelector('div.vaults-table__header');
 }
 
 function divClass(className) {
