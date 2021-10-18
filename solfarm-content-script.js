@@ -26,7 +26,7 @@ function getReturns() {
 
             // Get the $ amount, the daily, weekly and yearly APYs
             // $$$
-            let match = row.querySelectorAll('div.vaults-table__row-item__cell-usd')[1].innerText.match(r_dollar)
+            let match = row.querySelector('div:nth-child(3) > div > div.vaults-table__row-item__cell-usd').innerText.match(r_dollar)
             if (match) {
                 let amount = 0
                 if (match[2]) {
